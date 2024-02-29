@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Disease Detection</title>
+</head>
+<body>
+
+<h1>Plant Disease Detection</h1>
+
+<video id="camera" width="640" height="480" autoplay></video>
+<button onclick="captureImage()">Capture Image</button>
+
+<!-- Add an image element for preview -->
+<img id="imagePreview" width="320" height="240" style="display: none;" alt="Captured Image">
+
+<script>
+    async function startCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const camera = document.getElementById('camera');
+            camera.srcObject = stream;
+        } catch (error) {
+            console.error('Error accessing camera:', error);
+        }
+    }
+
+    function captureImage() {
+        const camera = document.getElementById('camera');
+        const canvas = document.createElement('canvas');
+        canvas.width = camera.videoWidth;
+        canvas.height = camera.videoHeight;
+
+        const context = canvas.getContext('2d');
+        context.drawImage(camera, 0, 0, canvas.width, canvas.height);
+
+        // Convert canvas data to a Blob
+        canvas.toBlob((blob) => {
+            // Show the captured image preview
+            const imagePreview = document.getElementById('imagePreview');
+            imagePreview.src = URL.createObjectURL(blob);
+            imagePreview.style.display = 'block';
+
+            // Send the Blob (image file) to Flask API server
+            sendImageToServer(blob);
+        }, 'image/jpeg');
+    }
+
+    function sendImageToServer(imageBlob) {
+        const formData = new FormData();
+        formData.append('image', imageBlob, 'image.jpg');
+
+        // Use the fetch API or other methods to send formData to your Flask API
+        // Example using fetch:
+        fetch('http://127.0.0.1:5000/upload_image', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Handle response from Flask API
+            console.log('Response from server:', data);
+        })
+        .catch(error => {
+            console.error('Error sending image to server:', error);
+        });
+    }
+
+    // Start the camera when the page loads
+    startCamera();
+
+    // Automatically capture photos every 30 seconds
+    setInterval(captureImage, 30000);
+</script>
+
+</body>
+</html>
